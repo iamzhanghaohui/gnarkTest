@@ -29,9 +29,14 @@ func (circuit *merkleCircuit) Define(api frontend.API) error {
 	merkle.VerifyProof(api, hFunc, circuit.RootHash, circuit.Path, circuit.Helper)
 	return nil
 }
-
+func doPanic() {
+	err := recover()
+	if err != nil {
+		fmt.Println("捕获到panic")
+	}
+}
 func TestVerify(t *testing.T) {
-
+	defer doPanic()
 	// generate random data
 	// makes sure that each chunk of 64 bits fits in a fr modulus, otherwise there are bugs due to the padding (domain separation)
 	var buf bytes.Buffer
@@ -61,10 +66,10 @@ func TestVerify(t *testing.T) {
 	}
 
 	// create cs
-	circuit := merkleCircuit{
-		Path:   make([]frontend.Variable, len(proof)),
-		Helper: make([]frontend.Variable, len(proof)-1),
-	}
+	//circuit := merkleCircuit{
+	//	Path:   make([]frontend.Variable, len(proof)),
+	//	Helper: make([]frontend.Variable, len(proof)-1),
+	//}
 
 	witness := merkleCircuit{
 		Path:     make([]frontend.Variable, len(proof)),
@@ -81,7 +86,7 @@ func TestVerify(t *testing.T) {
 	validWitness, err := frontend.NewWitness(&witness, ecc.BN254)
 
 	validPublicWitness, err := frontend.NewWitness(&witness, ecc.BN254, frontend.PublicOnly())
-	ccs, err := frontend.Compile(ecc.BN254, r1cs.NewBuilder, &circuit)
+	ccs, err := frontend.Compile(ecc.BN254, r1cs.NewBuilder, &witness)
 	pk, vk, err := groth16.Setup(ccs)
 
 	proof2, err := groth16.Prove(ccs, pk, validWitness)
